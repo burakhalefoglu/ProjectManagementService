@@ -1,0 +1,73 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: project-management-worker
+  namespace: worker-app-dev
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 2
+  selector:
+    matchLabels:
+      app: project-management-worker
+  template:
+    metadata:
+      labels:
+        app: project-management-worker
+    spec:
+      containers:
+        - name: project-management-worker
+          image: CONTAINER_IMAGE
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: "75m"
+              memory: "250Mi"
+            limits:
+              cpu: "75m"
+              memory: "250Mi"
+          env:
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-app-config
+                  key: redis-host
+            - name: REDIS_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: worker-app-secret
+                  key: redis-password
+            - name: KAFKA_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-app-config
+                  key: kafka-host
+            - name: CASSANDRA_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-app-config
+                  key: cass-host
+            - name: CASSANDRA_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-app-config
+                  key: cass-user
+            - name: CASSANDRA_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: worker-app-secret
+                  key: cass-password
+          livenessProbe:
+            exec:
+              command:
+                - cat
+                - /app/healthy.txt
+            initialDelaySeconds: 60
+            periodSeconds: 5
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
